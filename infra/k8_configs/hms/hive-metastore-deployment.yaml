@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hive-metastore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hive-metastore
+  template:
+    metadata:
+      labels:
+        app: hive-metastore
+    spec:
+#      initContainers:
+#      - name: init-home-dir
+#        image: busybox
+#        command: ['sh', '-c', 'mkdir -p /home/hive/.beeline && chmod -R 777 /home/hive/.beeline']
+#        volumeMounts:
+#        - mountPath: /home/hive
+#          name: hive-home
+      containers:
+      - name: hive-metastore
+        image: apache/hive:4.0.0
+        ports:
+        - containerPort: 9083
+        env:
+#        - name: HIVE_METASTORE_URI
+#          value: "thrift://0.0.0.0:9083"
+        - name: SERVICE_NAME
+          value: "hive-metastore"
+        - name: HIVE_METASTORE_DB_TYPE
+          value: "mysql"
+        - name: HIVE_METASTORE_DB_PORT
+          value: "3306"
+        - name: HIVE_METASTORE_DB_NAME
+          value: "metastore_db"
+        - name: HIVE_METASTORE_DB_USER
+          value: "hive"
+        - name: HIVE_METASTORE_DB_HOST
+          value: "mysql"
+        - name: HIVE_METASTORE_DB_PASSWORD
+          value: "hivepassword"
+        volumeMounts:
+        - mountPath: /home/hive
+          name: hive-home
+        - name: config-volume
+          mountPath: /opt/hive/conf
+        - name: mysql-connector-volume
+          mountPath: /tmp/mysql-connector/mysql-connector-j-9.2.0.jar
+          subPath: mysql-connector-java-8.0.33.jar
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "3Gi"
+            cpu: "2"
+      volumes:
+      - name: hive-home
+        emptyDir: {}
+      - name: config-volume
+        configMap:
+          name: hive-site-config
+      - name: mysql-connector-volume
+        persistentVolumeClaim:
+          claimName: mysql-connector-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hive-metastore
+spec:
+  ports:
+    - port: 9083
+      targetPort: 9083
+  selector:
+    app: hive-metastore
+  type: ClusterIP
