@@ -7,6 +7,11 @@ infra/modules/.terraform
 .terraform
 # C extensions
 *.so
+terraform.tfstate
+terraform.tfstate.backup
+infra/modules/terraform.tfstate
+infra/modules/terraform.tfstate.backup
+
 
 # Distribution / packaging
 .Python
